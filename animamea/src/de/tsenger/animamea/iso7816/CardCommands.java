@@ -21,6 +21,7 @@ package de.tsenger.animamea.iso7816;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
 
 import javax.smartcardio.CommandAPDU;
 
@@ -78,5 +79,22 @@ public class CardCommands {
 		}
 		return new CommandAPDU(command.toByteArray());
 	}
-
+	
+	
+	public static CommandAPDU resetRetryCounterPin(String newPin) {
+		
+		byte[] resetRetryPinCmd = new byte[] { (byte) 0x00, (byte) 0x2c, (byte) 0x02, (byte) 0x03 };
+		byte[] pin = newPin.getBytes(Charset.forName("ISO-8859-1"));
+		
+		ByteArrayOutputStream command = new ByteArrayOutputStream();
+		try {
+			command.write(resetRetryPinCmd);
+			command.write((byte) 0x06); 
+			command.write(pin);
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		}
+		return new CommandAPDU(command.toByteArray());
+	}
 }

@@ -7,8 +7,9 @@
 		</accessrules>
 	</classpathentry>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
-	<classpathentry kind="lib" path="/home/tsenger/Dokumente/Programming/log4j-1.2.16.jar"/>
-	<classpathentry kind="lib" path="/home/tsenger/Dokumente/Programming/bcpkix-jdk15on-150.jar" sourcepath="/home/tsenger/Dokumente/Programming/bcpkix-jdk15on-150/src.zip"/>
-	<classpathentry kind="lib" path="/home/tsenger/Dokumente/Programming/bcprov-jdk15on-150.jar" sourcepath="/home/tsenger/Dokumente/Programming/bcprov-jdk15on-150/src.zip"/>
+	<classpathentry kind="lib" path="lib/bcpkix-jdk15on-150.jar"/>
+	<classpathentry kind="lib" path="lib/bcprov-jdk15on-150.jar"/>
+	<classpathentry kind="lib" path="lib/commons-cli-1.2.jar"/>
+	<classpathentry kind="lib" path="lib/log4j-1.2-1.2.17.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
