@@ -19,6 +19,7 @@
 
 package de.tsenger.animamea.crypto;
 
+import org.apache.log4j.Logger;
 import org.bouncycastle.crypto.digests.SHA1Digest;
 import org.bouncycastle.crypto.digests.SHA256Digest;
 
@@ -28,6 +29,8 @@ import org.bouncycastle.crypto.digests.SHA256Digest;
  */
 public class KeyDerivationFunction {
 
+	static Logger logger = Logger.getLogger(KeyDerivationFunction.class);
+	
 	private byte[] mergedData = null;
 
 	/**
@@ -95,10 +98,12 @@ public class KeyDerivationFunction {
 			throw new IllegalArgumentException("c must be 1, 2 or 3!");
 
 		byte[] cBytes = intToByteArray(c);
+		//logger.info("K: " + HexString.bufferToHex(K));
 
 		mergedData = new byte[K.length + cBytes.length];
 		System.arraycopy(K, 0, mergedData, 0, K.length);
 		System.arraycopy(cBytes, 0, mergedData, K.length, cBytes.length);
+		//logger.info("MERGE DATA: " + HexString.bufferToHex(mergedData));
 	}
 
 	/**

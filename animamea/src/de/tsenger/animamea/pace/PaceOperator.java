@@ -191,15 +191,16 @@ public class PaceOperator {
 	 * @throws SecureMessagingException 
 	 */
 	public SecureMessaging performPace() throws PaceException, SecureMessagingException, CardException {
-
+		
 		// send MSE:SetAT
 		int resp = sendMSESetAT(terminalType).getSW();
 		if (resp != 0x9000)	throw new PaceException("MSE:Set AT failed. SW: " + Integer.toHexString(resp));
 
 		// send first GA and get nonce
 		byte[] nonce_z = getNonce().getDataObject(0);
+		logger.debug("NONCE S ENC: "+HexString.bufferToHex(nonce_z));
 		byte[] nonce_s = decryptNonce(nonce_z);
-		logger.debug("Nonce s: "+HexString.bufferToHex(nonce_s));
+		logger.debug("NONCE S PLAIN: "+HexString.bufferToHex(nonce_s));
 		byte[] X1 = pace.getX1(nonce_s);
 
 		// X1 zur Karte schicken und Y1 empfangen
@@ -236,6 +237,85 @@ public class PaceOperator {
 		
 		return new SecureMessaging(crypto, kenc, kmac, new byte[crypto.getBlockSize()]);
 	}
+
+	/**
+	 * Führt alle Schritte des PACE-Protokolls durch und liefert bei Erfolg 
+	 * eine mit den ausgehandelten Schlüsseln intialisierte SecureMessaging-Instanz zurück.
+	 * 
+	 * @return Bei Erfolg von PACE wird eine mit den ausgehandelten Schlüsseln 
+	 * 			intialisierte SecureMessaging-Instanz zurückgegeben. Anderfalls <code>null</code>.
+	 * @throws PaceException 
+	 * @throws CardException 
+	 * @throws SecureMessagingException 
+	 */
+	public SecureMessaging performPaceWithTrigger(String startCmd, String stopCmd) throws PaceException, SecureMessagingException, CardException {
+		
+		// before sending MSE:SetAT, trigger start
+		try {
+			logger.info("starting: "+startCmd);
+		Runtime rt = Runtime.getRuntime();
+        Process proc = rt.exec(startCmd);
+		} catch(IOException e) {
+			// just silently fail
+		}
+		
+		// send MSE:SetAT
+		int resp = sendMSESetAT(terminalType).getSW();
+		if (resp != 0x9000)	throw new PaceException("MSE:Set AT failed. SW: " + Integer.toHexString(resp));
+
+		// afterwards, trigger stop
+		try {
+			logger.info("starting: "+stopCmd);
+		Runtime rt = Runtime.getRuntime();
+        Process proc = rt.exec(stopCmd);
+		} catch(IOException e) {
+			// just silently fail
+		}
+		
+		
+		// send first GA and get nonce
+		byte[] nonce_z = getNonce().getDataObject(0);
+		logger.debug("NONCE S ENC: "+HexString.bufferToHex(nonce_z));
+		byte[] nonce_s = decryptNonce(nonce_z);
+		logger.debug("NONCE S PLAIN: "+HexString.bufferToHex(nonce_s));
+		byte[] X1 = pace.getX1(nonce_s);
+
+		// X1 zur Karte schicken und Y1 empfangen
+		byte[] Y1 = mapNonce(X1).getDataObject(2);
+
+		byte[] X2 = pace.getX2(Y1);
+		// X2 zur Karte schicken und Y2 empfangen.
+		byte[] Y2 = performKeyAgreement(X2).getDataObject(4);
+		
+		// Y2 ist PK_Picc der für die TA benötigt wird.
+		pk_picc = Y2.clone();
+
+		byte[] S = pace.getSharedSecret_K(Y2);
+		byte[] kenc = getKenc(S);
+		byte[] kmac = getKmac(S);
+		logger.debug("K bzw S: "+HexString.bufferToHex(S));
+		logger.debug("Kenc: "+HexString.bufferToHex(kenc));
+		logger.debug("Kmac: "+HexString.bufferToHex(kmac));
+		// Authentication Token T_PCD berechnen
+		byte[] tpcd = calcAuthToken(kmac, Y2);
+
+		// Authentication Token T_PCD zur Karte schicken und Authentication Token T_PICC empfangen
+		DynamicAuthenticationData dad = performMutualAuthentication(tpcd);
+		byte[] tpicc = dad.getDataObject(6);
+		if (dad.getDataObject(7)!= null) logger.info("CAR: "+new String(dad.getDataObject(7)));
+		if (dad.getDataObject(8)!= null) logger.info("CAR2: "+new String(dad.getDataObject(8)));
+
+		// Authentication Token T_PICC' berechnen
+		byte[] tpicc_strich = calcAuthToken(kmac, X2);
+		logger.debug("tpicc' :"+HexString.bufferToHex(tpicc_strich));
+
+		// Prüfe ob T_PICC = T_PICC'
+		if (!Arrays.areEqual(tpicc, tpicc_strich)) throw new PaceException("Authentication Tokens are different");
+		
+		return new SecureMessaging(crypto, kenc, kmac, new byte[crypto.getBlockSize()]);
+	}
+
+	
 	
 	/**
 	 * Liefert den ephemeralen Public Key des Chips zurück. Dieser wird für Terminal
@@ -399,6 +479,8 @@ public class PaceOperator {
 	 */
 	private byte[] decryptNonce(byte[] z) {
 		byte[] derivatedPassword = getKey(keyLength, passwordBytes, 3);
+		//logger.info("PASSWORD BYTES: " + HexString.bufferToHex(passwordBytes));
+		logger.info("PACE NONCE ENC KEY: " + HexString.bufferToHex(derivatedPassword));
 		return crypto.decryptBlock(derivatedPassword, z);
 	}
 
@@ -430,6 +512,7 @@ public class PaceOperator {
 
 		KeyDerivationFunction kdf = new KeyDerivationFunction(K, c);
 
+		//logger.info("KEY LENGTH: " + keyLength);
 		switch (keyLength) {
 		case 112:
 			key = kdf.getDESedeKey();

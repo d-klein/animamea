@@ -193,7 +193,7 @@ public class Operator {
 	private void resetPinWithPin(String oldPin, String newPin) throws Exception {
 		connectCard();			
 		SecurityInfos cardAccess = getEFCardAccess();	
-		PublicKey ephPacePublicKey = performPACE(cardAccess, oldPin, PACE_PW_REF_PIN, PACE_TERMINAL_REF_AT);
+		PublicKey ephPacePublicKey = performPACE(cardAccess, oldPin, PACE_PW_REF_PIN, PACE_TERMINAL_REF_AT, "","");
 
 		//KeyPair ephPCDKeyPair = performTerminalAuthentication(cardAccess, ephPacePublicKey);
 		
@@ -204,7 +204,7 @@ public class Operator {
 	private void resetPinWithCan(String can, String newPin) throws Exception {
 		connectCard();			
 		SecurityInfos cardAccess = getEFCardAccess();	
-		PublicKey ephPacePublicKey = performPACE(cardAccess, can, PACE_PW_REF_CAN, PACE_TERMINAL_REF_AT);
+		PublicKey ephPacePublicKey = performPACE(cardAccess, can, PACE_PW_REF_CAN, PACE_TERMINAL_REF_AT,"","");
 
 		KeyPair ephPCDKeyPair = performTerminalAuthentication(cardAccess, ephPacePublicKey);
 		
@@ -216,7 +216,7 @@ public class Operator {
 				
 				//Extrahiere SecurityInfos
 				SecurityInfos efcs = decodeEFCardSecurity(efcsBytes);
-				FileSystem.saveFile("/home/gast/EF.CardSecurity_eID.bin", efcsBytes);
+				FileSystem.saveFile("EF.CardSecurity_eID.bin", efcsBytes);
 				logger.debug("EF.CardSecurity \n: " + efcs);
 				logger.info("EF.CardSecurity decoded");
 
@@ -262,7 +262,7 @@ public class Operator {
 	private void runPaceWithPinAsAT() throws Exception {
 		connectCard();			
 		SecurityInfos cardAccess = getEFCardAccess();	
-		PublicKey ephPacePublicKey = performPACE(cardAccess, pin, PACE_PW_REF_PIN, PACE_TERMINAL_REF_AT);
+		PublicKey ephPacePublicKey = performPACE(cardAccess, pin, PACE_PW_REF_PIN, PACE_TERMINAL_REF_AT, cmdPaceStart, cmdPaceFinish);
 		
 		//KeyPair ephPCDKeyPair = performTerminalAuthentication(cardAccess, ephPacePublicKey);
 	}
@@ -356,9 +356,9 @@ public class Operator {
 	}
 	
 	private PublicKey performPACE(SecurityInfos cardAccess, String pacePassword, 
-			int pacePasswordRef, int paceTerminalRef) throws PaceException, CardException {
+			int pacePasswordRef, int paceTerminalRef, String startCmd, String stopCmd) throws PaceException, CardException {
 		
-		logger.info("logger: got :" + pacePassword);
+		logger.info("logger: got PACE password:" + pacePassword);
 		
 		//Initialisiere PACE mit dem ersten PACE-Info aus dem EF.CardAccess
 		PaceOperator pop = new PaceOperator(ch);
@@ -371,7 +371,11 @@ public class Operator {
 		//Führe PACE durch
 		SecureMessaging sm = null;
 		try {
-			sm = pop.performPace();
+			if(startCmd == "" || stopCmd == "") {
+				sm = pop.performPace();
+			} else {
+				sm = pop.performPaceWithTrigger(startCmd, stopCmd);
+			}
 		} catch (SecureMessagingException e) {
 			throw new PaceException("SecureMessaging failure while performing PACE",e);
 		}

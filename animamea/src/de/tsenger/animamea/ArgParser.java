@@ -41,7 +41,7 @@ public class ArgParser {
 
 	public void displayHelp() {
 		HelpFormatter formatter = new HelpFormatter();
-		formatter.printHelp("Zernike", options );
+		formatter.printHelp("java -jar animamea.jar", options );
 	}
 
 	@SuppressWarnings("static-access") public ArgParser() {	
