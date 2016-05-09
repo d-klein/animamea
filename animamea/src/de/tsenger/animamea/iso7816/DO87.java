@@ -43,6 +43,8 @@ public class DO87 {
 	public DO87(byte[] data) {
 		this.data = data.clone();
 		value_ = addPaddingIndicator(data);
+		//System.out.println("do 87 padding indicator:");
+		//System.out.println(Hex.toHexString(value_));
 		to = new DERTaggedObject(false, 7, new DEROctetString(value_));
 	}
 

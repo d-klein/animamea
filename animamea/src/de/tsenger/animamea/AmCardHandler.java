@@ -61,6 +61,23 @@ public class AmCardHandler {
 		
 		if (sm != null)	{ 
 			capdu = sm.wrap(capdu);
+			byte[] capdu_long = capdu.getBytes();
+			int len = capdu_long.length;
+			if(capdu_long.length > 261 && capdu_long[4] == 0 && capdu_long[5] == 0 && capdu_long[len-1] == 0 && capdu_long[len-2] == 0) {
+				System.out.println("caught a very long (encrypted) capdu");
+				System.out.println("shrinking Lc to 1 byte and Le to 1 byte...");
+				logger.debug("original C-APDU:\n"+ HexString.bufferToHex(capdu.getBytes()));
+				logger.debug("removing zeros in Lc:\n");
+				byte[] patchedBytes = new byte[capdu_long.length - 3];
+				for(int i=0;i<4;i++) {
+					patchedBytes[i] = capdu_long[i];
+				}
+				for(int i=4;i<patchedBytes.length;i++) {
+					patchedBytes[i] = capdu_long[i+2];
+				}
+				logger.debug("patched plain:\n"+ HexString.bufferToHex(patchedBytes));
+				capdu = new CommandAPDU(patchedBytes);
+			}
 			logger.debug("potected C-APDU:\n"+ HexString.bufferToHex(capdu.getBytes()));
 		}
 		

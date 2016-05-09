@@ -111,17 +111,37 @@ public class SecureMessaging {
 		ByteArrayOutputStream bOut = new ByteArrayOutputStream();
 		try {
 
-			if (do87 != null) 
+			if (do87 != null) { 
+				//System.out.println("writing do87");
 				bOut.write(do87.getEncoded());
+			}
 			
-			if (do97 != null)
+			if (do97 != null) {
+				//System.out.println("writing do97");
 				bOut.write(do97.getEncoded());
+			}
 			
+			//System.out.println("writing do8e");
 			bOut.write(do8E.getEncoded());
 
 		} catch (IOException e) {
 			throw new SecureMessagingException(e);
 		}
+		/*
+		System.out.println("new command: ");
+		System.out.println(header[0]);
+		System.out.println(header[1]);
+		System.out.println(header[2]);
+		System.out.println(Hex.toHexString((header)));
+		System.out.println(Hex.toHexString(bOut.toByteArray()));
+		System.out.println("length: ");
+		System.out.println(bOut.toByteArray().length);
+		int l = bOut.toByteArray().length;
+		//return new CommandAPDU(header[0], header[1], header[2], header[3], bOut.toByteArray(), 65536);
+		CommandAPDU foo = new CommandAPDU(header[0], header[1], header[2], header[3], bOut.toByteArray(), 0, l, 65536);
+		System.out.println("nc bytes:");
+		System.out.println(Hex.toHexString(foo.getBytes()));*/
+		//return new CommandAPDU(header[0], header[1], header[2], header[3], bOut.toByteArray(), 0, l, 65536);
 		return new CommandAPDU(header[0], header[1], header[2], header[3], bOut.toByteArray(), 65536);
 	}
 
